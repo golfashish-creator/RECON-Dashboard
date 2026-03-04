@@ -60,6 +60,7 @@ function compileCSV() {
 
     let compiled = [];
     let headerRow = null;
+    let masterColumnCount = null;
 
     filesData.forEach(fileObj => {
 
@@ -71,21 +72,29 @@ function compileCSV() {
         const selectedColumns = fileObj.config.columns;
 
         if (!headerRow) {
-            headerRow = selectedColumns.map(i => rows[0][i] || "").join(',');
+            headerRow = selectedColumns.map(i => rows[0][i] || "");
+            masterColumnCount = headerRow.length;
         }
 
         for (let i = 1; i < rows.length; i++) {
+
             const row = rows[i];
-            const selected = selectedColumns.map(i => row[i] || "");
+
+            let selected = selectedColumns.map(i => row[i] || "");
+
+            // 🔒 Force same column length
+            while (selected.length < masterColumnCount) {
+                selected.push("");
+            }
+
             compiled.push(selected.join(','));
         }
 
     });
 
-    const finalCSV = headerRow + '\n' + compiled.join('\n');
+    const finalCSV = headerRow.join(',') + '\n' + compiled.join('\n');
     downloadCSV(finalCSV);
 }
-
 function downloadCSV(content) {
     const blob = new Blob([content], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
