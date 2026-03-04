@@ -24,7 +24,7 @@ function handleFiles(event) {
 
     Array.from(files).forEach(file => {
 
-        if (file.name.startsWith("Converse Tally Cancel GST Report_")) {
+        if (file.name.startsWith("Converse Tally Cancel GST Report_04032026190753")) {
 
             const reader = new FileReader();
 
@@ -38,7 +38,7 @@ function handleFiles(event) {
     });
 
     if (promises.length === 0) {
-        alert("No matching files found.");
+        alert("No matching file found.");
         return;
     }
 
