@@ -58,8 +58,8 @@ function handleFiles(event) {
 
 function compileCSV() {
 
-    let compiledRows = [];
     let masterHeader = [];
+    let compiledRows = [];
 
     filesData.forEach(fileObj => {
 
@@ -68,44 +68,34 @@ function compileCSV() {
         });
 
         const rows = parsed.data;
-        const selectedColumns = fileObj.config.columns;
+        const selectedIndexes = fileObj.config.columns;
 
-        // Extract this file's header
-        const currentHeader = selectedColumns.map(i => rows[0][i] || "");
+        // Extract header names for selected columns
+        const currentHeaders = selectedIndexes.map(i => rows[0][i] || "");
 
-        // If master header is empty → set it
-        if (masterHeader.length === 0) {
-            masterHeader = [...currentHeader];
-        } 
-        // If this file has MORE columns → expand master header
-        else if (currentHeader.length > masterHeader.length) {
-
-            const extraCount = currentHeader.length - masterHeader.length;
-
-            for (let i = 0; i < extraCount; i++) {
-                masterHeader.push(currentHeader[masterHeader.length + i] || `Extra_Column_${i+1}`);
+        // Add new headers to masterHeader if not already present
+        currentHeaders.forEach(header => {
+            if (!masterHeader.includes(header)) {
+                masterHeader.push(header);
             }
+        });
 
-            // Also expand old rows with empty cells
-            compiledRows = compiledRows.map(row => {
-                while (row.length < masterHeader.length) {
-                    row.push("");
-                }
-                return row;
-            });
-        }
-
-        // Now process data rows
+        // Process data rows
         for (let r = 1; r < rows.length; r++) {
 
-            let selectedRow = selectedColumns.map(i => rows[r][i] || "");
+            let newRow = new Array(masterHeader.length).fill("");
 
-            // Pad this row if shorter than master header
-            while (selectedRow.length < masterHeader.length) {
-                selectedRow.push("");
-            }
+            selectedIndexes.forEach((colIndex, idx) => {
 
-            compiledRows.push(selectedRow);
+                const headerName = currentHeaders[idx];
+                const masterIndex = masterHeader.indexOf(headerName);
+
+                if (masterIndex !== -1) {
+                    newRow[masterIndex] = rows[r][colIndex] || "";
+                }
+            });
+
+            compiledRows.push(newRow);
         }
 
     });
