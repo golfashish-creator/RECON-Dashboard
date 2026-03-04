@@ -20,27 +20,32 @@ function handleFiles(event) {
     const files = event.target.files;
     filesData = [];
 
+    let promises = [];
+
     Array.from(files).forEach(file => {
 
-        // ✅ Only process matching filenames
         if (file.name.startsWith("Converse Tally Cancel GST Report_")) {
 
             const reader = new FileReader();
-            reader.onload = e => {
-                filesData.push(e.target.result);
-            };
-            reader.readAsText(file);
 
-        } else {
-            console.log("Ignored file:", file.name);
+            const promise = new Promise(resolve => {
+                reader.onload = e => resolve(e.target.result);
+            });
+
+            reader.readAsText(file);
+            promises.push(promise);
         }
     });
 
-    if (filesData.length > 0) {
-        setTimeout(compileCSV, 500); // slight delay to allow file reading
-    } else {
+    if (promises.length === 0) {
         alert("No matching files found.");
+        return;
     }
+
+    Promise.all(promises).then(results => {
+        filesData = results;
+        compileCSV();
+    });
 }
 
 function compileCSV() {
