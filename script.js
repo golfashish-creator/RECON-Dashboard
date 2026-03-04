@@ -49,22 +49,29 @@ function handleFiles(event) {
 }
 
 function compileCSV() {
+
     let compiled = [];
     let headerRow = null;
 
     filesData.forEach(data => {
-        const lines = data.split('\n').map(l => l.trim()).filter(l => l);
+
+        const parsed = Papa.parse(data, {
+            skipEmptyLines: true
+        });
+
+        const rows = parsed.data;
 
         if (!headerRow) {
-            const headers = lines[0].split(',');
-            headerRow = selectedColumns.map(i => headers[i]).join(',');
+            headerRow = selectedColumns.map(i => rows[0][i]).join(',');
         }
 
-        lines.slice(1).forEach(line => {
-            const cols = line.split(',');
-            const selected = selectedColumns.map(i => cols[i] || "");
+        for (let i = 1; i < rows.length; i++) {
+
+            const row = rows[i];
+            const selected = selectedColumns.map(i => row[i] || "");
             compiled.push(selected.join(','));
-        });
+        }
+
     });
 
     const finalCSV = headerRow + '\n' + compiled.join('\n');
