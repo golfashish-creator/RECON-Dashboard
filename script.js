@@ -58,9 +58,8 @@ function handleFiles(event) {
 
 function compileCSV() {
 
-    let compiled = [];
-    let headerRow = null;
-    let masterColumnCount = null;
+    let compiledRows = [];
+    let masterHeader = [];
 
     filesData.forEach(fileObj => {
 
@@ -71,28 +70,51 @@ function compileCSV() {
         const rows = parsed.data;
         const selectedColumns = fileObj.config.columns;
 
-        if (!headerRow) {
-            headerRow = selectedColumns.map(i => rows[0][i] || "");
-            masterColumnCount = headerRow.length;
-        }
+        // Extract this file's header
+        const currentHeader = selectedColumns.map(i => rows[0][i] || "");
 
-        for (let i = 1; i < rows.length; i++) {
+        // If master header is empty → set it
+        if (masterHeader.length === 0) {
+            masterHeader = [...currentHeader];
+        } 
+        // If this file has MORE columns → expand master header
+        else if (currentHeader.length > masterHeader.length) {
 
-            const row = rows[i];
+            const extraCount = currentHeader.length - masterHeader.length;
 
-            let selected = selectedColumns.map(i => row[i] || "");
-
-            // 🔒 Force same column length
-            while (selected.length < masterColumnCount) {
-                selected.push("");
+            for (let i = 0; i < extraCount; i++) {
+                masterHeader.push(currentHeader[masterHeader.length + i] || `Extra_Column_${i+1}`);
             }
 
-            compiled.push(selected.join(','));
+            // Also expand old rows with empty cells
+            compiledRows = compiledRows.map(row => {
+                while (row.length < masterHeader.length) {
+                    row.push("");
+                }
+                return row;
+            });
+        }
+
+        // Now process data rows
+        for (let r = 1; r < rows.length; r++) {
+
+            let selectedRow = selectedColumns.map(i => rows[r][i] || "");
+
+            // Pad this row if shorter than master header
+            while (selectedRow.length < masterHeader.length) {
+                selectedRow.push("");
+            }
+
+            compiledRows.push(selectedRow);
         }
 
     });
 
-    const finalCSV = headerRow.join(',') + '\n' + compiled.join('\n');
+    // Convert to CSV
+    const finalCSV =
+        masterHeader.join(',') + '\n' +
+        compiledRows.map(r => r.join(',')).join('\n');
+
     downloadCSV(finalCSV);
 }
 function downloadCSV(content) {
