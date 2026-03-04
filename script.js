@@ -1,72 +1,60 @@
-let selectedColumns = [];
-let headers = [];
 let filesData = [];
 
+// Column indexes (0-based)
+const selectedColumns = [
+    1,2,3,4,5,6,7,8,  // B–I
+    11,12,            // L,M
+    17,               // R
+    24,25,            // Y,Z
+    27,               // AB
+    29,               // AD
+    45,               // AT
+    47,               // AV
+    56,               // BE
+    61                // BJ
+];
+
 document.getElementById('fileInput').addEventListener('change', handleFiles);
-document.getElementById('compileBtn').addEventListener('click', compileCSV);
 
 function handleFiles(event) {
     const files = event.target.files;
     filesData = [];
 
-    if (files.length === 0) return;
-
-    const reader = new FileReader();
-
-    reader.onload = function(e) {
-        const text = e.target.result;
-        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-
-        headers = lines[0].split(',');
-        displayColumnSelector(headers);
-    };
-
-    reader.readAsText(files[0]);
-
-    // Store all file data
     Array.from(files).forEach(file => {
-        const r = new FileReader();
-        r.onload = e => {
-            filesData.push(e.target.result);
-        };
-        r.readAsText(file);
+
+        // ✅ Only process matching filenames
+        if (file.name.startsWith("Converse Tally Cancel GST Report_")) {
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                filesData.push(e.target.result);
+            };
+            reader.readAsText(file);
+
+        } else {
+            console.log("Ignored file:", file.name);
+        }
     });
-}
 
-function displayColumnSelector(headers) {
-    const container = document.getElementById('columnSelector');
-    container.innerHTML = "<h3>Select Columns:</h3>";
-
-    headers.forEach((header, index) => {
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.value = index;
-        checkbox.id = "col" + index;
-
-        checkbox.addEventListener('change', function() {
-            if (this.checked) {
-                selectedColumns.push(parseInt(this.value));
-            } else {
-                selectedColumns = selectedColumns.filter(c => c !== parseInt(this.value));
-            }
-            document.getElementById('compileBtn').disabled = selectedColumns.length === 0;
-        });
-
-        const label = document.createElement('label');
-        label.htmlFor = checkbox.id;
-        label.innerText = header;
-
-        container.appendChild(checkbox);
-        container.appendChild(label);
-        container.appendChild(document.createElement('br'));
-    });
+    if (filesData.length > 0) {
+        setTimeout(compileCSV, 500); // slight delay to allow file reading
+    } else {
+        alert("No matching files found.");
+    }
 }
 
 function compileCSV() {
     let compiled = [];
+    let headerRow = null;
 
     filesData.forEach(data => {
         const lines = data.split('\n').map(l => l.trim()).filter(l => l);
+
+        if (!headerRow) {
+            const headers = lines[0].split(',');
+            headerRow = selectedColumns.map(i => headers[i]).join(',');
+        }
+
         lines.slice(1).forEach(line => {
             const cols = line.split(',');
             const selected = selectedColumns.map(i => cols[i] || "");
@@ -74,9 +62,7 @@ function compileCSV() {
         });
     });
 
-    const headerRow = selectedColumns.map(i => headers[i]).join(',');
     const finalCSV = headerRow + '\n' + compiled.join('\n');
-
     downloadCSV(finalCSV);
 }
 
