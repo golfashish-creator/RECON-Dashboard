@@ -1,17 +1,15 @@
 let filesData = [];
 
-// Column indexes (0-based)
-const selectedColumns = [
-    1,2,3,4,5,6,7,8,  // B–I
-    11,12,            // L,M
-    17,               // R
-    24,25,            // Y,Z
-    27,               // AB
-    29,               // AD
-    45,               // AT
-    47,               // AV
-    56,               // BE
-    61                // BJ
+// Configuration for different file types
+const fileConfigs = [
+    {
+        nameMatch: "Converse Tally Cancel GST Report_",
+        columns: [1,2,3,4,5,6,7,8,11,12,17,24,25,27,29,45,47,56,61]
+    },
+    {
+        nameMatch: "Tally Return GST Report_",
+        columns: [0,1,3,5,6,7,8,11,12,17,24,25,27,29,51,56,62,63,64]
+    }
 ];
 
 document.getElementById('fileInput').addEventListener('change', handleFiles);
@@ -24,21 +22,31 @@ function handleFiles(event) {
 
     Array.from(files).forEach(file => {
 
-        if (file.name.startsWith("Converse Tally Cancel GST Report_04032026190753")) {
+        const config = fileConfigs.find(cfg =>
+            file.name.toLowerCase().includes(cfg.nameMatch.toLowerCase())
+        );
+
+        if (config) {
 
             const reader = new FileReader();
 
             const promise = new Promise(resolve => {
-                reader.onload = e => resolve(e.target.result);
+                reader.onload = e => resolve({
+                    content: e.target.result,
+                    config: config
+                });
             });
 
             reader.readAsText(file);
             promises.push(promise);
+
+        } else {
+            console.log("Ignored file:", file.name);
         }
     });
 
     if (promises.length === 0) {
-        alert("No matching file found.");
+        alert("No matching files found.");
         return;
     }
 
@@ -53,20 +61,20 @@ function compileCSV() {
     let compiled = [];
     let headerRow = null;
 
-    filesData.forEach(data => {
+    filesData.forEach(fileObj => {
 
-        const parsed = Papa.parse(data, {
+        const parsed = Papa.parse(fileObj.content, {
             skipEmptyLines: true
         });
 
         const rows = parsed.data;
+        const selectedColumns = fileObj.config.columns;
 
         if (!headerRow) {
-            headerRow = selectedColumns.map(i => rows[0][i]).join(',');
+            headerRow = selectedColumns.map(i => rows[0][i] || "").join(',');
         }
 
         for (let i = 1; i < rows.length; i++) {
-
             const row = rows[i];
             const selected = selectedColumns.map(i => row[i] || "");
             compiled.push(selected.join(','));
